@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logo Extractor Pro - PRIM</title>
+    <style>
+        :root { --primary: #00b0f0; --dark: #1a1a1a; --success: #00ff00; --transilien: #92c02a; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .container { background: #2a2a2a; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; max-width: 600px; border: 1px solid #444; }
+        h1 { color: var(--primary); margin-bottom: 10px; }
+        .stats { display: flex; justify-content: space-around; margin: 20px 0; font-size: 0.8em; color: #888; }
+        .stats div { background: #111; padding: 10px; border-radius: 5px; min-width: 80px; }
+        .btn { background: var(--primary); color: white; border: none; padding: 15px 30px; font-size: 1.1em; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; text-transform: uppercase; width: 100%; margin-top: 20px; }
+        .btn:hover { background: #008cc0; transform: translateY(-2px); }
+        .btn:disabled { background: #555; cursor: not-allowed; }
+        #status { margin-top: 25px; font-family: monospace; font-size: 0.85em; padding: 15px; border-radius: 5px; background: #111; display: none; text-align: left; max-height: 200px; overflow-y: auto; }
+        .log-ok { color: var(--success); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Logo Extractor Pro 📦</h1>
+    <p>Extraction groupée : RER, Métros, Tramways et <strong>Transiliens</strong>.</p>
+    
+    <div class="stats">
+        <div><strong>5</strong><br>RER</div>
+        <div><strong>16</strong><br>Métros</div>
+        <div><strong>11</strong><br>Trams</div>
+        <div><strong>8</strong><br>Trains</div>
+    </div>
+
+    <button id="extractBtn" class="btn">Télécharger le pack complet (ZIP)</button>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    const API_KEY = 'EmtVEmNsBjhi42tjabYkcZlkKZblEQdw';
+    
+    const LINE_IDS = [
+        // RER (A à E)
+        'C01742','C01743','C01744','C01745','C01746',
+        // METROS (1 à 14 + 3bis/7bis)
+        'C01371','C01372','C01373','C01374','C01375','C01376','C01377','C01378',
+        'C01379','C01380','C01381','C01382','C01383','C01384','C01386','C01387',
+        // TRAMWAYS (T1 à T13)
+        'C01389','C01390','C01391','C01392','C01393','C01394','C01395','C01396','C01397','C01677','C01679',
+        // TRANSILIENS (H, J, K, L, N, P, R, U)
+        'C01737','C01738','C01739','C01740','C01741','C01747','C01748','C01749'
+    ];
+
+    const btn = document.getElementById('extractBtn');
+    const status = document.getElementById('status');
+
+    function log(msg, type = '') {
+        status.style.display = 'block';
+        const div = document.createElement('div');
+        if(type === 'ok') div.className = 'log-ok';
+        div.innerHTML = `> ${msg}`;
+        status.appendChild(div);
+        status.scrollTop = status.scrollHeight;
+    }
+
+    async function downloadLogos() {
+        btn.disabled = true;
+        status.innerHTML = '';
+        log("Préparation de la liste (40 lignes détectées)...");
+        
+        const baseUrl = "https://prim.iledefrance-mobilites.fr/marketplace/ilico/getIcon/sprite";
+        const queryParams = `?lineIds=${LINE_IDS.join(',')}&format=zip_svg&apikey=${API_KEY}`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(baseUrl + queryParams)}`;
+
+        try {
+            log("Appel API via proxy sécurisé...");
+            const response = await fetch(proxyUrl);
+            
+            if (response.ok) {
+                log("Archive ZIP générée par PRIM !", "ok");
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "Logos_IDF_Complet.zip";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                log("Téléchargement démarré.", "ok");
+                log("Quota utilisé : 1/10. Opération terminée.");
+            } else {
+                throw new Error(`Erreur ${response.status}`);
+            }
+        } catch (error) {
+            log(`Erreur : ${error.message}`, "error");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    btn.addEventListener('click', downloadLogos);
+</script>
+
+</body>
+</html>
